@@ -1,0 +1,46 @@
+let nombres = [];
+let vistos = new Set();
+
+const esInterfaz = (texto) => {
+  const patrones = [
+    /^(a few|just now|\d+ (second|minute|hour|day|week|month|year))/i,
+    /^\d+(\.\d+)?\s*(KB|MB|GB|items?|elementos?)$/i,
+    /^(name|nombre|modified|modificado|modified by|modificado por|file size|tamaño|type|tipo)$/i,
+    /^(sort|ordenar|filter|filtrar|group|agrupar)$/i,
+    /^(share|compartir|copy|sync|download|descargar|upload|subir)$/i,
+    /^(home|inicio|documents|documentos|sites|sitios)$/i,
+    /^(shared|privado|private|pending|pendiente)$/i,  // ← estados
+    /^\d+$/,
+  ];
+  return patrones.some(p => p.test(texto));
+};
+
+// Detectar si un texto parece nombre de persona (Nombre Apellido sin números)
+const esNombrePersona = (texto) => {
+  const palabras = texto.trim().split(/\s+/);
+  const sinNumeros = !/\d/.test(texto);
+  const pocasPalabras = palabras.length <= 4;
+  const sinGuion = !texto.includes(' - ');
+  return sinNumeros && pocasPalabras && sinGuion && palabras.length >= 2;
+};
+
+document.querySelectorAll('[role="gridcell"]').forEach((el) => {
+  const texto = el.innerText.trim();
+
+  if (texto.length >= 3 && !vistos.has(texto) && !esInterfaz(texto) && !esNombrePersona(texto)) {
+    vistos.add(texto);
+    nombres.push(texto);
+  }
+});
+
+console.log(`✅ Encontradas: ${nombres.length} carpetas`);
+console.log(nombres);
+
+const csv = "\uFEFFN°;Nombre de Carpeta\n" +
+            nombres.map((n, i) => `${i+1};"${n}"`).join('\n');
+
+const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+const a = document.createElement('a');
+a.href = URL.createObjectURL(blob);
+a.download = 'carpetas_sharepoint.csv';
+a.click();
